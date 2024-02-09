@@ -1,0 +1,221 @@
+---
+title: "Heath Insurance Price Determinants"
+author: "Alex Szczepanski"
+date: "2023-11-28"
+output: word_document
+---
+
+```{r setup, echo=FALSE}
+library(leaps)
+library(openxlsx)
+library(forecast) 
+library(car) 
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+setwd("C:/Users/alexs/OneDrive - Binghamton University/Webmininmarket/project")
+data <- read.csv('insurance.csv')
+```
+
+```{r}
+data$sex <- as.factor(data$sex)
+data$smoker <- as.factor(data$smoker)
+data$region <- factor(data$region)
+```
+
+```{r}
+set.seed(100) 
+#Randomly selecting 70% of observations
+train_index = sample(c(1:nrow(data)[1]), nrow(data)[1]*0.7)
+data_train = data[train_index,] 
+data_valid = data[-train_index,]
+names(data_train)
+
+```
+
+```{r}
+reg1 <- lm(charges ~ ., data_train)
+summary(reg1)
+```
+
+```{r}
+car_lm_step_back = step(reg1, direction = "backward")
+car_lm_step_pred_back = predict(car_lm_step_back, data_valid)
+summary(car_lm_step_back) 
+
+```
+
+
+```{r}
+accuracy(car_lm_step_pred_back, data_valid$charges)
+car_lm_step_back
+```
+
+
+```{r}
+car_lm_step_forward = step(reg1, direction = "forward")
+summary(car_lm_step_back) 
+car_lm_step_pred_for = predict(car_lm_step_back, data_valid)
+```
+
+
+```{r}
+accuracy(car_lm_step_pred_for, data_valid$charges)
+car_lm_step_forward
+```
+
+
+```{r}
+insurance_lm_step <- step(reg1, direction = "both")
+summary(insurance_lm_step)  # Which variables were dropped/added?
+insurance_lm_step_pred <- predict(insurance_lm_step, data_valid)
+accuracy(insurance_lm_step_pred, data_valid$charges)
+
+```
+
+
+```{r}
+vif(reg1)
+```
+
+
+
+```{r}
+avg_charges_by_region <- aggregate(charges ~ region, data = data, FUN = median)
+print(avg_charges_by_region)
+barplot(avg_charges_by_region$charges, names.arg = avg_charges_by_region$region,
+        col = "skyblue", border = "turquoise",
+        main = "Median Charges by Region", xlab = "Region", ylab = "Median Charges")
+
+```
+```{r}
+max(data$age)
+min(data$age)
+library(tidyverse)
+```
+
+```{r}
+age_range_1 <- data %>% filter(age >= 18 & age < 25)
+age_range_2 <- data %>% filter(age >= 25 & age < 30)
+age_range_3 <- data %>% filter(age >= 30 & age < 35)
+age_range_4 <- data %>% filter(age >= 35 & age < 40)
+
+age_range_5 <- data %>% filter(age >= 40 & age < 45)
+
+
+age_range_6 <- data %>% filter(age >= 45 & age < 50)
+
+age_range_7 <- data %>% filter(age >= 50 & age < 55)
+
+age_range_8 <- data %>% filter(age >= 55 & age < 60)
+
+age_range_9 <- data %>% filter(age >= 60 & age < 64)
+age_ranges <- list(age_range_1, age_range_2, age_range_3,age_range_4,age_range_5,age_range_6,age_range_7,age_range_8,age_range_9)
+age_median = list()
+pos = 0
+age_range_str = 
+for (i in age_ranges){  
+  med <- median(i$charges)
+  ranges <- age_range_str[pos]
+  meds <- list(med)
+  pos <- pos + 1
+  age_median <- c(age_median, meds)
+}
+print(age_median)
+ages_medians <- data.frame(ranges = c('18-24', '25-29', '30-34','35-39', '40-44','45-49', '50-54', '55-59', '60-64'),
+                           charges = c(2209.414, 4058.116,  5136.371, 6457.843, 7639.417, 9285.254, 10923.93, 12030.81,  13903.9))
+
+print(ages_medians)  
+```
+```{r}
+barplot(ages_medians$charges, names.arg = ages_medians$ranges,
+        col = "skyblue", border = "turquoise",
+        main = "Median Charges by Age Group", xlab = "Age Range", ylab = "Median Charges")
+```
+```{r}
+plot(data$bmi, data$charges, 
+             xlab = "BMI", ylab = "Charges", 
+             main = "Scatter Plot of Charges vs. BMI")
+
+```
+```{r}
+plot(log(data$bmi), log(data$charges), 
+             xlab = "log(BMI)", ylab = "log(Charges)", 
+             main = "Scatter Plot of Log Charges vs. Log BMI")
+```
+```{r}
+plot(data$charges, data$age, 
+             xlab = "Age", ylab = "Charges", 
+             main = "Scatter Plot of  Charges vs. Age")
+```
+```{r}
+plot(data$children, data$charges, 
+             xlab = "Children", ylab = "Charges", 
+             main = "Scatter Plot of  Charges vs. Children")
+```
+```{r}
+data_2 <- filter(data_train, smoker == 'yes')
+
+data_2
+```
+
+```{r}
+plot(data_2$charges, data_2$age, 
+             xlab = "Charges", ylab = "Age",
+     main = "Scatter Plot of  Charges vs. Age (Smokers)")
+```
+
+
+```{r}
+data_6 <-  filter(data_train, smoker == 'no')
+plot(data_6$charges, data_6$age, 
+             xlab = "Charges", ylab = "Age", 
+             main = "Scatter Plot of  Charges vs. Age (Non-Smokers)")
+```
+
+```{r}
+data_3 <-  filter(data_train, region == 'northwest')
+data_3
+```
+
+```{r}
+plot(data_3$charges, data_3$age, 
+             xlab = "Age", ylab = "Charges", 
+             main = "Scatter Plot of  Charges vs. Age")
+```
+```{r}
+cor(data_3$charges, data_3$age)
+```
+```{r}
+cor(data$charges, data$age)
+```
+
+
+```{r}
+data_4 <-  filter(data_train, sex == 'male')
+plot(data_4$charges, data_4$age, 
+             xlab = "Age", ylab = "Charges", 
+             main = "Scatter Plot of  Charges vs. Age")
+```
+
+
+```{r}
+data_5 <-  filter(data_train, children > 1)
+plot(data_5$charges, data_5$age, 
+             xlab = "Age", ylab = "Charges", 
+             main = "Scatter Plot of  Charges vs. Age")
+```
+
+```{r}
+cor(data_train$bmi, data_train$charges)
+```
+```{r}
+avg_charges_by_sex <- aggregate(charges ~ sex, data = data, FUN = mean)
+print(avg_charges_by_sex)
+barplot(avg_charges_by_sex$charges, names.arg = avg_charges_by_sex$sex,
+        col = "skyblue", border = "turquoise",
+        main = "Average Charges by Sex", xlab = "Region", ylab = "Sex")
+```
+
